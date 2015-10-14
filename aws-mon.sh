@@ -270,7 +270,7 @@ loadavg_output=`/bin/cat /proc/loadavg`
 vmstat_output=`/usr/bin/vmstat`
 meminfo_output=`/bin/cat /proc/meminfo`
 df_output=`/bin/df -k -l -P $DISK_PATH`
-disk_iostat_output=`iostat -dm 1 1 $DISK_IOSTAT_DISK | awk '/md/'`
+disk_iostat_output=`iostat -dm 1 1 $DISK_IOSTAT_DISK | awk '/xv/'`
 
 ########################################
 # Utility Function
