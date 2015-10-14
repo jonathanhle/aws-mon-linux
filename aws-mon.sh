@@ -591,6 +591,6 @@ if [ $DISK_IOSTAT_TPS -eq 1 -a -n "$DISK_IOSTAT_DISK" ]; then
         echo "disk_iostat_tps:$disk_iostat_tps_value"
     fi
     if [ $VERIFY -eq 0 ]; then
-        aws cloudwatch put-metric-data --metric-name "DiskTransactionsPerSecond" --value "$disk_iostat_tps" --unit "Count/Second" $CLOUDWATCH_OPTS
+        aws cloudwatch put-metric-data --metric-name "DiskTransactionsPerSecond" --value "$disk_iostat_tps_value" --unit "Count/Second" $CLOUDWATCH_OPTS
     fi
 fi
