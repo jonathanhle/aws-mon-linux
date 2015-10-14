@@ -270,7 +270,7 @@ loadavg_output=`/bin/cat /proc/loadavg`
 vmstat_output=`/usr/bin/vmstat`
 meminfo_output=`/bin/cat /proc/meminfo`
 df_output=`/bin/df -k -l -P $DISK_PATH`
-disk_iostat=`iostat -dm 1 1 | grep -i $DISK_IOSTAT_DISK`
+disk_iostat=`iostat -dm 1 1`
 
 ########################################
 # Utility Function
@@ -586,7 +586,7 @@ if [ $DISK_SPACE_AVAIL -eq 1 -a -n "$DISK_PATH" ]; then
 fi
 
 if [ $DISK_IOSTAT_TPS -eq 1 -a -n "$DISK_IOSTAT_DISK" ]; then
-    disk_iostat_tps=`echo $disk_iostat | awk '{print $2}'`
+    disk_iostat_tps=`echo $disk_iostat | grep -i $DISK_IOSTAT_DISK | awk '{print $2}'`
     if [ $VERBOSE -eq 1 ]; then
         echo "disk_iostat_tps:$disk_iostat_tps"
     fi
