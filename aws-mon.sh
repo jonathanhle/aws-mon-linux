@@ -71,7 +71,7 @@ usage()
     printf "    %-28s %s\n" "--disk-space-util" "Reports disk space utilization in percentages."
     printf "    %-28s %s\n" "--disk-space-used" "Reports allocated disk space in gigabytes."
     printf "    %-28s %s\n" "--disk-space-avail" "Reports available disk space in gigabytes."
-    printf "    %-28s %s\n" "--disk-iostat-disk DISK xv* OS name" "Selects the disk by name path on which to report iostat transactions per second IOPS."
+    printf "    %-28s %s\n" "--disk-iostat-disk DISK" "Selects the disk by name path on which to report iostat transactions per second IOPS."
     printf "    %-28s %s\n" "--disk-iostat-tps" "Reports transactions per second for specified disk"
     printf "    %-28s %s\n" "--all-items" "Reports all items."
 }
@@ -270,7 +270,7 @@ loadavg_output=`/bin/cat /proc/loadavg`
 vmstat_output=`/usr/bin/vmstat`
 meminfo_output=`/bin/cat /proc/meminfo`
 df_output=`/bin/df -k -l -P $DISK_PATH`
-disk_iostat=`iostat -dm 1 1`
+disk_iostat_output=`iostat -dm 1 1 $DISK_IOSTAT_DISK | awk '/$DISK_IOSTAT_DISK/'`
 
 ########################################
 # Utility Function
@@ -586,9 +586,9 @@ if [ $DISK_SPACE_AVAIL -eq 1 -a -n "$DISK_PATH" ]; then
 fi
 
 if [ $DISK_IOSTAT_TPS -eq 1 -a -n "$DISK_IOSTAT_DISK" ]; then
-    disk_iostat_tps=`echo $disk_iostat | grep -i $DISK_IOSTAT_DISK | awk '{print $2}'`
+    disk_iostat_tps_value=`echo $disk_iostat_output | awk '{print $2}'`
     if [ $VERBOSE -eq 1 ]; then
-        echo "disk_iostat_tps:$disk_iostat_tps"
+        echo "disk_iostat_tps:$disk_iostat_tps_value"
     fi
     if [ $VERIFY -eq 0 ]; then
         aws cloudwatch put-metric-data --metric-name "DiskTransactionsPerSecond" --value "$disk_iostat_tps" --unit "Count/Second" $CLOUDWATCH_OPTS
