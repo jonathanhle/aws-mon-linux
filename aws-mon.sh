@@ -2,23 +2,23 @@
 
 # Copyright (C) 2014 mooapp
 #
-# Licensed under the Apache License, Version 2.0 (the "License"). You may not 
-# use this file except in compliance with the License. A copy of the License 
+# Licensed under the Apache License, Version 2.0 (the "License"). You may not
+# use this file except in compliance with the License. A copy of the License
 # is located at
 #
 #        http://www.apache.org/licenses/LICENSE-2.0
 #
-# or in the "LICENSE" file accompanying this file. This file is distributed 
-# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either 
-# express or implied. See the License for the specific language governing 
+# or in the "LICENSE" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
 
 ########################################
 # Initial Settings
 ########################################
-SCRIPT_NAME=${0##*/} 
-SCRIPT_VERSION=1.1 
+SCRIPT_NAME=${0##*/}
+SCRIPT_VERSION=1.1
 
 instanceid=`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`
 azone=`wget -q -O - http://169.254.169.254/latest/meta-data/placement/availability-zone`
@@ -37,10 +37,10 @@ GIGA=1073741824
 ########################################
 # Usage
 ########################################
-usage() 
-{ 
+usage()
+{
     echo "Usage: $SCRIPT_NAME [options] "
-    echo "Options:" 
+    echo "Options:"
     printf "    %-28s %s\n" "-h|--help" "Displays detailed usage information."
     printf "    %-28s %s\n" "--version" "Displays the version number."
     printf "    %-28s %s\n" "--verify" "Checks configuration and prepares a remote call."
@@ -71,6 +71,8 @@ usage()
     printf "    %-28s %s\n" "--disk-space-util" "Reports disk space utilization in percentages."
     printf "    %-28s %s\n" "--disk-space-used" "Reports allocated disk space in gigabytes."
     printf "    %-28s %s\n" "--disk-space-avail" "Reports available disk space in gigabytes."
+    printf "    %-28s %s\n" "--disk-iostat-disk DISK xv* OS name" "Selects the disk by name path on which to report iostat transactions per second IOPS."
+    printf "    %-28s %s\n" "--disk-iostat-tps" "Reports transactions per second for specified disk"
     printf "    %-28s %s\n" "--all-items" "Reports all items."
 }
 
@@ -79,9 +81,9 @@ usage()
 # Options
 ########################################
 SHORT_OPTS="h"
-LONG_OPTS="help,version,verify,verbose,debug,from-cron,profile:,load-ave1,load-ave5,load-ave15,interrupt,context-switch,cpu-us,cpu-sy,cpu-id,cpu-wa,cpu-st,memory-units:,mem-used-incl-cache-buff,mem-util,mem-used,mem-avail,swap-util,swap-used,swap-avail,disk-path:,disk-space-units:,disk-space-util,disk-space-used,disk-space-avail,all-items" 
+LONG_OPTS="help,version,verify,verbose,debug,from-cron,profile:,load-ave1,load-ave5,load-ave15,interrupt,context-switch,cpu-us,cpu-sy,cpu-id,cpu-wa,cpu-st,memory-units:,mem-used-incl-cache-buff,mem-util,mem-used,mem-avail,swap-util,swap-used,swap-avail,disk-path:,disk-space-units:,disk-space-util,disk-space-used,disk-space-avail,all-items"
 
-ARGS=$(getopt -s bash --options $SHORT_OPTS --longoptions $LONG_OPTS --name $SCRIPT_NAME -- "$@" ) 
+ARGS=$(getopt -s bash --options $SHORT_OPTS --longoptions $LONG_OPTS --name $SCRIPT_NAME -- "$@" )
 
 VERIFY=0
 VERBOSE=0
@@ -113,23 +115,25 @@ DISK_SPACE_UNIT_DIV=1
 DISK_SPACE_UTIL=0
 DISK_SPACE_USED=0
 DISK_SPACE_AVAIL=0
+DISK_IOSTAT_DISK=""
+DISK_IOSTAT_TPS=0
 
-eval set -- "$ARGS" 
-while true; do 
-    case $1 in 
+eval set -- "$ARGS"
+while true; do
+    case $1 in
         # General
-        -h|--help) 
-            usage 
-            exit 0 
-            ;; 
-        --version) 
-            echo "$SCRIPT_VERSION" 
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --version)
+            echo "$SCRIPT_VERSION"
             ;;
         --verify)
-            VERIFY=1  
-            ;; 
+            VERIFY=1
+            ;;
         --verbose)
-            VERBOSE=1   
+            VERBOSE=1
             ;;
         --debug)
             DEBUG=1
@@ -183,26 +187,26 @@ while true; do
             MEM_USED_INCL_CACHE_BUFF=1
             ;;
         --mem-util)
-            MEM_UTIL=1  
+            MEM_UTIL=1
             ;;
-        --mem-used) 
-            MEM_USED=1 
+        --mem-used)
+            MEM_USED=1
             ;;
-        --mem-avail) 
-            MEM_AVAIL=1 
+        --mem-avail)
+            MEM_AVAIL=1
             ;;
-        --swap-util) 
-            SWAP_UTIL=1 
+        --swap-util)
+            SWAP_UTIL=1
             ;;
-        --swap-used) 
-            SWAP_USED=1 
+        --swap-used)
+            SWAP_USED=1
             ;;
         --swap-avail)
             SWAP_AVAIL=1
             ;;
         # Disk
-        --disk-path) 
-            shift 
+        --disk-path)
+            shift
             DISK_PATH=$1
             ;;
         --disk-space-units)
@@ -217,6 +221,13 @@ while true; do
             ;;
         --disk-space-avail)
             DISK_SPACE_AVAIL=1
+            ;;
+        --disk-iostat-disk)
+            shift
+            DISK_IOSTAT_DISK=$1
+            ;;
+        --disk-iostat-tps)
+            DISK_IOSTAT_TPS=1
             ;;
         --all-items)
             LOAD_AVE1=1
@@ -239,16 +250,16 @@ while true; do
             DISK_SPACE_USED=1
             DISK_SPACE_AVAIL=1
             ;;
-        --) 
+        --)
             shift
-            break 
-            ;; 
-        *) 
+            break
+            ;;
+        *)
             shift
-            break 
-            ;; 
-    esac 
-    shift 
+            break
+            ;;
+    esac
+    shift
 done
 
 
@@ -259,7 +270,7 @@ loadavg_output=`/bin/cat /proc/loadavg`
 vmstat_output=`/usr/bin/vmstat`
 meminfo_output=`/bin/cat /proc/meminfo`
 df_output=`/bin/df -k -l -P $DISK_PATH`
-
+disk_iostat=`iostat -dm 1 1 | grep -i $DISK_IOSTAT_DISK`
 
 ########################################
 # Utility Function
@@ -341,7 +352,7 @@ if [ $LOAD_AVE1 -eq 1 ]; then
         echo "loadave1:$loadave1"
     fi
     if [ $VERIFY -eq 0 ]; then
-        aws cloudwatch put-metric-data --metric-name "LoadAverage1Min" --value "$loadave1" --unit "Count" $CLOUDWATCH_OPTS 
+        aws cloudwatch put-metric-data --metric-name "LoadAverage1Min" --value "$loadave1" --unit "Count" $CLOUDWATCH_OPTS
     fi
 fi
 
@@ -495,7 +506,7 @@ if [ $MEM_AVAIL -eq 1 ]; then
     if [ $VERBOSE -eq 1 ]; then
         echo "mem_avail:$mem_avail"
     fi
-    if [ $VERIFY -eq 0 ]; then        
+    if [ $VERIFY -eq 0 ]; then
         aws cloudwatch put-metric-data --metric-name "MemoryAvailable" --value "$mem_avail" --unit "$MEM_UNITS" $CLOUDWATCH_OPTS
     fi
 fi
@@ -574,3 +585,12 @@ if [ $DISK_SPACE_AVAIL -eq 1 -a -n "$DISK_PATH" ]; then
     fi
 fi
 
+if [ $DISK_IOSTAT_TPS -eq 1 -a -n "$DISK_IOSTAT_DISK" ]; then
+    disk_iostat_tps=`echo $disk_iostat | awk '{print $2}'`
+    if [ $VERBOSE -eq 1 ]; then
+        echo "disk_iostat_tps:$disk_iostat_tps"
+    fi
+    if [ $VERIFY -eq 0 ]; then
+        aws cloudwatch put-metric-data --metric-name "DiskTransactionsPerSecond" --value "$disk_iostat_tps" --unit "Count/Second" $CLOUDWATCH_OPTS
+    fi
+fi
