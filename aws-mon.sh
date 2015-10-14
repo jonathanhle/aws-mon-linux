@@ -586,7 +586,7 @@ if [ $DISK_SPACE_AVAIL -eq 1 -a -n "$DISK_PATH" ]; then
 fi
 
 if [ $DISK_IOSTAT_TPS -eq 1 -a -n "$DISK_IOSTAT_DISK" ]; then
-    disk_iostat_tps_value=`echo $disk_iostat_output | awk '{print $2}'`
+    disk_iostat_tps_value=`echo $disk_iostat_output | awk '{print $2}' | sed 's/.$//'`
     if [ $VERBOSE -eq 1 ]; then
         echo "disk_iostat_tps:$disk_iostat_tps_value"
     fi
